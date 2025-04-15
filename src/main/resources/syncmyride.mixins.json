@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "nnhomoli.syncmyride.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+  ],
+  "client": [
+  ],
+  "server": [
+    "entryImplMixin",
+    "packetHandlerServerMixin",
+    "playerServerMixin",
+    "trackerImplMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
