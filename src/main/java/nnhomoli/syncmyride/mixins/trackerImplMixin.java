@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import nnhomoli.syncmyride.lib.entryImplMethods;
 import nnhomoli.syncmyride.lib.trackerImplMethods;
 
-@Mixin(value = EntityTrackerImpl.class,remap = false)
+@Mixin(value = EntityTrackerImpl.class,remap = false,priority = 700)
 public class trackerImplMixin implements trackerImplMethods {
 	@Shadow @Final public IntHashMap<EntityTrackerEntryImpl> trackedEntityHashTable;
 	@Override

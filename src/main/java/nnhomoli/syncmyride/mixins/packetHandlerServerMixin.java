@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import nnhomoli.syncmyride.lib.trackerImplMethods;
 
-@Mixin(value = PacketHandlerServer.class,remap = false)
+@Mixin(value = PacketHandlerServer.class,remap = false,priority = 700)
 class packetHandlerServerMixin {
 	@Shadow private PlayerServer playerEntity;
 
