@@ -19,7 +19,7 @@ Because of the above, it can affect performance a bit
 
 <small>Also possibly support for entity as passenger, but untested</small>
 
-<img src="gallery/comparison.GIF" width="480" height="250" alt="comparison gif">
+<img src="gallery/comparison.gif" width="480" height="250" alt="comparison gif">
 
 ## Config
 
