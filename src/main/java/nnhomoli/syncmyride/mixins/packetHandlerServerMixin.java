@@ -1,27 +1,18 @@
 package nnhomoli.syncmyride.mixins;
 
-import net.minecraft.core.entity.Entity;
-import net.minecraft.core.world.IVehicle;
-import net.minecraft.server.entity.player.PlayerServer;
+import net.minecraft.core.net.packet.PacketUpdatePlayerState;
 import net.minecraft.server.net.handler.PacketHandlerServer;
 
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
 
-import nnhomoli.syncmyride.lib.trackerImplMethods;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = PacketHandlerServer.class,remap = false,priority = 700)
 class packetHandlerServerMixin {
-	@Shadow private PlayerServer playerEntity;
-
-	@Redirect(method = "handlePlayerState",at= @At(value = "INVOKE", target = "Lnet/minecraft/core/world/IVehicle;ejectRider()Lnet/minecraft/core/entity/Entity;"))
-	public Entity handlePlayerState(IVehicle instance) {
-		Entity e = instance.ejectRider();
-		if(playerEntity.vehicle != instance) {
-			((trackerImplMethods)playerEntity.mcServer.getEntityTracker(playerEntity.dimension)).syncMyRide$updateVehicleForTrackedPlayersAndEntity(playerEntity);
-		}
-		return e;
+	@Inject(method = "handlePlayerState",at= @At(value = "INVOKE", target = "Lnet/minecraft/core/world/IVehicle;ejectRider()Lnet/minecraft/core/entity/Entity;"), cancellable = true)
+	public void handlePlayerState(PacketUpdatePlayerState updatePlayerStatePacket, CallbackInfo ci) {
+		ci.cancel();
 	}
 }

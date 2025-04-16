@@ -6,5 +6,5 @@ public interface entryImplMethods {
 	void syncMyRide$updateVehicle(PlayerServer p);
 	void syncMyRide$updateVehicleToTrackedPlayers();
 	void syncMyRide$removeDummiesForTrackedPlayers();
-	void syncMyRide$removeDummies(PlayerServer p);
+	void syncMyRide$removeDummies(PlayerServer u);
 }
