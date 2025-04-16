@@ -21,7 +21,7 @@ abstract class playerServerMixin extends Player {
 	public void rideTick() {
 		if(this.isSneaking() && this.vehicle != null){
 			this.vehicle.ejectRider();
-			return;
+			if(this.vehicle == null) return;
 		}
 		super.rideTick();
 	}

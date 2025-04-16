@@ -29,24 +29,24 @@ import java.util.concurrent.TimeUnit;
 
 import static nnhomoli.syncmyride.lib.dummy.getDummy;
 import static nnhomoli.syncmyride.SyncMyRide.getVehicleDelay;
-import nnhomoli.syncmyride.lib.entryImplMethods;
 
 @Mixin(value = EntityTrackerEntryImpl.class,remap = false,priority = 700)
-abstract class entryImplMixin implements entryImplMethods {
+abstract class entryImplMixin {
 	@Shadow public abstract void removeTrackedPlayerSymmetric(Player player);
 	@Shadow public abstract Entity getTrackedEntity();
 	@Shadow public Set<PlayerServer> trackedPlayers;
 
-	@Unique public IVehicle lastVehicle = null;
 	@Unique public HashMap<UUID, List<Integer>> dummies = new HashMap<>();
 	@Unique public HashMap<UUID,Integer> dummyAge = new HashMap<>();
 	@Unique public boolean threadSafe = true;
 
+	@Unique public IVehicle lastVehicle = null;
+
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
 		if(lastVehicle != getTrackedEntity().vehicle) {
-			syncMyRide$updateVehicleToTrackedPlayers();
-			if(getTrackedEntity() instanceof PlayerServer) syncMyRide$updateVehicle((PlayerServer) getTrackedEntity());
+			updateVehicleForTrackedPlayers();
+			if(getTrackedEntity() instanceof PlayerServer) updateVehicle((PlayerServer) getTrackedEntity());
 			lastVehicle = getTrackedEntity().vehicle;
 		}
 
@@ -56,26 +56,26 @@ abstract class entryImplMixin implements entryImplMethods {
 			++age;
 			dummyAge.put(u, age);
 			if (age >= 6000) {
-				syncMyRide$updateVehicle((PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u));
+				updateVehicle((PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u));
 			}
 
 			if(!threadSafe) break;
 		}
 	}
-	@Override
-	public void syncMyRide$removeDummiesForTrackedPlayers() {
+	@Unique
+	public void updateVehicleForTrackedPlayers() {
 		for(PlayerServer p : trackedPlayers) {
-			syncMyRide$removeDummies(p);
+			updateVehicle(p);
 		}
 	}
-	@Override
-	public void syncMyRide$updateVehicleToTrackedPlayers() {
+	@Unique
+	public void removeDummiesForTrackedPlayers() {
 		for(PlayerServer p : trackedPlayers) {
-			syncMyRide$updateVehicle(p);
+			removeDummies(p);
 		}
 	}
-	@Override
-	public void syncMyRide$removeDummies(PlayerServer p) {
+	@Unique
+	public void removeDummies(PlayerServer p) {
 		threadSafe = false;
 
 		if(!dummies.containsKey(p.uuid)) return;
@@ -89,7 +89,7 @@ abstract class entryImplMixin implements entryImplMethods {
 	public void removeTrackedPlayerSymmetric(Player player, CallbackInfo ci) {
 		if(!(player instanceof PlayerServer)) return;
 
-		syncMyRide$removeDummies((PlayerServer)player);
+		removeDummies((PlayerServer)player);
 	}
 	@Inject(method = "removeFromTrackedPlayers",at=@At("TAIL"))
 	public void removeFromTrackedPlayers(Player player, CallbackInfo ci) {
@@ -98,10 +98,10 @@ abstract class entryImplMixin implements entryImplMethods {
 		dummyAge.remove(player.uuid);
 		threadSafe = true;
 	}
-	@Override
-	public void syncMyRide$updateVehicle(PlayerServer p) {
+	@Unique
+	public void updateVehicle(PlayerServer p) {
 		Entity me = getTrackedEntity();
-		if(dummies.containsKey(p.uuid)) syncMyRide$removeDummies(p);
+		if(dummies.containsKey(p.uuid)) removeDummies(p);
 
 		if(!dummies.containsKey(p.uuid)) {
 			IVehicle rv = me.vehicle;
@@ -149,20 +149,22 @@ abstract class entryImplMixin implements entryImplMethods {
 			}
 		}
 	}
-
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/core/net/entity/NetEntityHandler;getSpawnPacket(Lnet/minecraft/core/net/entity/EntityTrackerEntry;)Lnet/minecraft/core/net/packet/Packet;"))
 	public void updatePlayerEntity(Player player, CallbackInfo ci) {
 		PlayerServer p = (PlayerServer) player;
 		Runnable task = () -> {
 			if(!trackedPlayers.contains(p)) return;
-			syncMyRide$updateVehicle(p);
+			updateVehicle(p);
 		};
 		Executors.newSingleThreadScheduledExecutor().schedule(task,getVehicleDelay(), TimeUnit.SECONDS);
 	}
-
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE", target = "Ljava/util/Set;remove(Ljava/lang/Object;)Z"), cancellable = true)
 	public void updatePlayerEntityTail(Player player, CallbackInfo ci) {
 		removeTrackedPlayerSymmetric(player);
 		ci.cancel();
+	}
+	@Inject(method = "sendDestroyEntityPacketToTrackedPlayers",at=@At("TAIL"))
+	public void sendDestroyEntityPacketToTrackedPlayers(CallbackInfo ci) {
+		removeDummiesForTrackedPlayers();
 	}
 }
