@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
-public class SyncMyRide implements ModInitializer{
+public final class SyncMyRide implements ModInitializer{
     private final String MOD_ID = "syncmyride";
     private final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 

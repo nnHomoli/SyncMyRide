@@ -6,7 +6,7 @@ import net.minecraft.core.item.ItemStack;
 
 import static nnhomoli.syncmyride.SyncMyRide.getDummyId;
 
-public class dummy {
+public final class dummy {
 	public static EntityItem getDummy(Entity e) {
 		EntityItem dummy = new EntityItem(e.world,e.x,e.y,e.z,new ItemStack(getDummyId(),1,0));
 

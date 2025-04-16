@@ -36,18 +36,17 @@ abstract class entryImplMixin {
 	@Shadow public abstract Entity getTrackedEntity();
 	@Shadow public Set<PlayerServer> trackedPlayers;
 
-	@Unique public HashMap<UUID, List<Integer>> dummies = new HashMap<>();
-	@Unique public HashMap<UUID,Integer> dummyAge = new HashMap<>();
-	@Unique public boolean threadSafe = true;
-
-	@Unique public IVehicle lastVehicle = null;
+	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
+	@Unique private final HashMap<UUID,Integer> dummyAge = new HashMap<>();
+	@Unique private boolean threadSafe = true;
+	@Unique private IVehicle lastTrackedVehicle = null;
 
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
-		if(lastVehicle != getTrackedEntity().vehicle) {
+		if(lastTrackedVehicle != getTrackedEntity().vehicle) {
 			updateVehicleForTrackedPlayers();
 			if(getTrackedEntity() instanceof PlayerServer) updateVehicle((PlayerServer) getTrackedEntity());
-			lastVehicle = getTrackedEntity().vehicle;
+			lastTrackedVehicle = getTrackedEntity().vehicle;
 		}
 
 		if(!threadSafe) return;
