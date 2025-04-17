@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +39,6 @@ abstract class entryImplMixin {
 
 	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
 	@Unique private final HashMap<UUID,Integer> dummyAge = new HashMap<>();
-	@Unique private boolean threadSafe = true;
 	@Unique private IVehicle lastTrackedVehicle = null;
 
 	@Inject(method = "tick",at=@At("RETURN"))
@@ -49,16 +49,16 @@ abstract class entryImplMixin {
 			lastTrackedVehicle = getTrackedEntity().vehicle;
 		}
 
-		if(!threadSafe) return;
-		for(UUID u : dummyAge.keySet()) {
+		Iterator<UUID> iter = dummyAge.keySet().iterator();
+		while(iter.hasNext()) {
+			UUID u = iter.next();
+
 			int age = dummyAge.get(u);
 			++age;
 			dummyAge.put(u, age);
-			if (age >= 6000) {
+			if (age >= 5900) {
 				updateVehicle((PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u));
 			}
-
-			if(!threadSafe) break;
 		}
 	}
 	@Unique
@@ -75,14 +75,10 @@ abstract class entryImplMixin {
 	}
 	@Unique
 	public void removeDummies(PlayerServer p) {
-		threadSafe = false;
-
 		if(!dummies.containsKey(p.uuid)) return;
 		for(int dum : dummies.get(p.uuid)) p.playerNetServerHandler.sendPacket(new PacketRemoveEntity(dum));
 		dummies.remove(p.uuid);
 		dummyAge.remove(p.uuid);
-
-		threadSafe = true;
 	}
 	@Inject(method = "removeTrackedPlayerSymmetric",at=@At("TAIL"))
 	public void removeTrackedPlayerSymmetric(Player player, CallbackInfo ci) {
@@ -92,10 +88,8 @@ abstract class entryImplMixin {
 	}
 	@Inject(method = "removeFromTrackedPlayers",at=@At("TAIL"))
 	public void removeFromTrackedPlayers(Player player, CallbackInfo ci) {
-		threadSafe = false;
 		dummies.remove(player.uuid);
 		dummyAge.remove(player.uuid);
-		threadSafe = true;
 	}
 	@Unique
 	public void updateVehicle(PlayerServer p) {
@@ -111,13 +105,11 @@ abstract class entryImplMixin {
 				Entity v = (Entity) rv;
 				EntityItem dataDummy = getDummy(me);
 				for (int i = 0; i < Math.round(v.getRideHeight() / (dataDummy.bbHeight + dataDummy.yd)); i++) {
-					threadSafe = false;
 					EntityItem newDummy = getDummy(me);
 
 					p.playerNetServerHandler.sendPacket(new PacketAddItemEntity(newDummy));
 
-					if (lastDummy == null)
-						p.playerNetServerHandler.sendPacket(new PacketSetRiding(newDummy, (Entity) me.vehicle));
+					if (lastDummy == null) p.playerNetServerHandler.sendPacket(new PacketSetRiding(newDummy, (Entity) me.vehicle));
 					else p.playerNetServerHandler.sendPacket(new PacketSetRiding(newDummy, lastDummy));
 
 					lastDummy = newDummy;
@@ -126,7 +118,6 @@ abstract class entryImplMixin {
 					dummyAge.put(p.uuid,0);
 				}
 
-				threadSafe = true;
 			}
 
 			if(lastDummy != null) {
@@ -151,6 +142,7 @@ abstract class entryImplMixin {
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/core/net/entity/NetEntityHandler;getSpawnPacket(Lnet/minecraft/core/net/entity/EntityTrackerEntry;)Lnet/minecraft/core/net/packet/Packet;"))
 	public void updatePlayerEntity(Player player, CallbackInfo ci) {
 		PlayerServer p = (PlayerServer) player;
+//		don't really think this one is any good
 		Runnable task = () -> {
 			if(!trackedPlayers.contains(p)) return;
 			updateVehicle(p);

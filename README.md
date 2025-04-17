@@ -6,18 +6,20 @@ This mod is intended for "[Better Than Adventure!](https://www.betterthanadventu
 
 While there could be better implementation by modding both client & server, this one is oriented to be handled by server only
 
-Because of the above, it can affect performance a bit
+Because of the above, it might affect performance a bit
 
 ## Features
 
 - Players now receive vehicle packets when they load a new entity
-- Ride Height synchronization by using dummies
-- The client now handles riding itself, resulting in no delay between movements
 - Better workaround for PacketSetRiding not accepting null
-- Cast exception fix when player tries to ride, but vehicle wasn't set as predicted 
-- Other small related improvements
+- Ride Height synchronization by using dummies
 
-<small>Also possibly support for entity as passenger, but untested</small>
+
+- /ride command
+- Also supports entities
+
+
+- Other small related improvements & fixes
 
 <img src="gallery/comparison.gif" width="480" height="250" alt="comparison gif">
 
@@ -37,6 +39,9 @@ Item ID that dummies are using to fill the gaps
 By default, this value is 16415, which is a "String" item
 
 ## Gallery
+
+<img src="gallery/zomobu.png" width="480" height="270" alt="Zombie riding on player">
+<img src="gallery/careepo.png" width="480" height="270" alt="Creeper riding on player">
 
 <img src="gallery/SMRWBT.png" width="497" height="198" alt="BetterTogether with SyncMyRide">
 <img src="gallery/BTStandAlone.png" width="436" height="192" alt="BetterTogether Standalone">
