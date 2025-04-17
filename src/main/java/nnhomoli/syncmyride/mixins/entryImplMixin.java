@@ -18,15 +18,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 
 import static nnhomoli.syncmyride.lib.dummy.getDummy;
 import static nnhomoli.syncmyride.SyncMyRide.getVehicleDelay;
@@ -40,6 +36,7 @@ abstract class entryImplMixin {
 	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
 	@Unique private final HashMap<UUID,Integer> dummyAge = new HashMap<>();
 	@Unique private IVehicle lastTrackedVehicle = null;
+	@Unique private int ticksRan = 0;
 
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
@@ -49,16 +46,32 @@ abstract class entryImplMixin {
 			lastTrackedVehicle = getTrackedEntity().vehicle;
 		}
 
-		Iterator<UUID> iter = dummyAge.keySet().iterator();
-		while(iter.hasNext()) {
-			UUID u = iter.next();
 
-			int age = dummyAge.get(u);
-			++age;
-			dummyAge.put(u, age);
-			if (age >= 5900) {
-				updateVehicle((PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u));
+		++ticksRan;
+		if(ticksRan >= 100) {
+			final ArrayList<UUID> needsUpdate = new ArrayList<>();
+			final HashMap<UUID,Integer> tmp = new HashMap<>(dummyAge);
+			for (UUID u : tmp.keySet()) {
+				int age = tmp.get(u);
+				age += ticksRan;
+				tmp.put(u, age);
+				if (age >= 5500) {
+					needsUpdate.add(u);;
+				}
 			}
+
+			dummyAge.putAll(tmp);
+
+			for(UUID u : needsUpdate) {
+				PlayerServer p = (PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u);
+				if (p != null && trackedPlayers.contains(p)) updateVehicle(p);
+				else {
+					dummyAge.remove(u);
+					dummies.remove(u);
+				}
+			}
+
+			ticksRan = 0;
 		}
 	}
 	@Unique
@@ -75,8 +88,7 @@ abstract class entryImplMixin {
 	}
 	@Unique
 	public void removeDummies(PlayerServer p) {
-		if(!dummies.containsKey(p.uuid)) return;
-		for(int dum : dummies.get(p.uuid)) p.playerNetServerHandler.sendPacket(new PacketRemoveEntity(dum));
+		if(dummies.containsKey(p.uuid)) for(int dum : dummies.get(p.uuid)) p.playerNetServerHandler.sendPacket(new PacketRemoveEntity(dum));
 		dummies.remove(p.uuid);
 		dummyAge.remove(p.uuid);
 	}
@@ -94,7 +106,7 @@ abstract class entryImplMixin {
 	@Unique
 	public void updateVehicle(PlayerServer p) {
 		Entity me = getTrackedEntity();
-		if(dummies.containsKey(p.uuid)) removeDummies(p);
+		removeDummies(p);
 
 		if(!dummies.containsKey(p.uuid)) {
 			IVehicle rv = me.vehicle;
@@ -141,13 +153,7 @@ abstract class entryImplMixin {
 	}
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/core/net/entity/NetEntityHandler;getSpawnPacket(Lnet/minecraft/core/net/entity/EntityTrackerEntry;)Lnet/minecraft/core/net/packet/Packet;"))
 	public void updatePlayerEntity(Player player, CallbackInfo ci) {
-		PlayerServer p = (PlayerServer) player;
-//		don't really think this one is any good
-		Runnable task = () -> {
-			if(!trackedPlayers.contains(p)) return;
-			updateVehicle(p);
-		};
-		Executors.newSingleThreadScheduledExecutor().schedule(task,getVehicleDelay(), TimeUnit.SECONDS);
+		dummyAge.put(player.uuid,5500-getVehicleDelay()*20);
 	}
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE", target = "Ljava/util/Set;remove(Ljava/lang/Object;)Z"), cancellable = true)
 	public void updatePlayerEntityTail(Player player, CallbackInfo ci) {
