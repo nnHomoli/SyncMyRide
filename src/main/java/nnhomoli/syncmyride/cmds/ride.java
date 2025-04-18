@@ -13,7 +13,9 @@ import net.minecraft.server.net.command.ServerCommandSource;
 
 public final class ride implements CommandManager.CommandRegistry {
 	public void register(CommandDispatcher<CommandSource> commandDispatcher) {
-		commandDispatcher.register((ArgumentBuilderLiteral)ArgumentBuilderLiteral.literal("ride").requires(c -> ((ServerCommandSource)c).hasAdmin()).then(ArgumentBuilderRequired.argument("rider", ArgumentTypeEntity.entity()).then(ArgumentBuilderRequired.argument("vehicle", ArgumentTypeEntity.entity()).executes(
+		commandDispatcher.register((ArgumentBuilderLiteral)ArgumentBuilderLiteral.literal("ride")
+			.requires(c -> ((ServerCommandSource)c).hasAdmin()).then(ArgumentBuilderRequired.argument("rider", ArgumentTypeEntity.entity()).
+				then(ArgumentBuilderRequired.argument("vehicle", ArgumentTypeEntity.entity()).executes(
 			c -> {
 				CommandSource s = (CommandSource) c.getSource();
 				EntitySelector vehicle = c.getArgument("vehicle", EntitySelector.class);

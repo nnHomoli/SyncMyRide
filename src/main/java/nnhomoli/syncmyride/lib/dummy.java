@@ -10,10 +10,12 @@ public final class dummy {
 	public static EntityItem getDummy(Entity e) {
 		EntityItem dummy = new EntityItem(e.world,e.x,e.y,e.z,new ItemStack(getDummyId(),1,0));
 
-//		these are actually ignored in the packet
 		dummy.remove();
 		dummy.noPhysics = true;
 		dummy.collision = false;
 		return dummy;
+	}
+	public static double getClientRideHeight() {
+		return 0.45;
 	}
 }

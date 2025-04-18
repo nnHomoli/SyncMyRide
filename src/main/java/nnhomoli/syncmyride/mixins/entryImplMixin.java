@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.HashSet;
 
-import static nnhomoli.syncmyride.lib.dummy.getDummy;
+import static nnhomoli.syncmyride.lib.dummy.*;
 import static nnhomoli.syncmyride.SyncMyRide.getVehicleDelay;
 
 @Mixin(value = EntityTrackerEntryImpl.class,remap = false,priority = 700)
@@ -36,7 +37,7 @@ abstract class entryImplMixin {
 	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
 	@Unique private final HashMap<UUID,Integer> dummyAge = new HashMap<>();
 	@Unique private IVehicle lastTrackedVehicle = null;
-	@Unique private int ticksRan = 0;
+	@Unique private int ticksSkipped = 0;
 
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
@@ -46,33 +47,28 @@ abstract class entryImplMixin {
 			lastTrackedVehicle = getTrackedEntity().vehicle;
 		}
 
+		++ticksSkipped;
+		if(ticksSkipped >= 100) {
+			final HashMap<UUID,Integer> temp = new HashMap<>(dummyAge);
+			for (UUID u : temp.keySet()) {
+				int age = temp.get(u);
+				int newAge = age + ticksSkipped;
 
-		++ticksRan;
-		if(ticksRan >= 100) {
-			final ArrayList<UUID> needsUpdate = new ArrayList<>();
-			final HashMap<UUID,Integer> tmp = new HashMap<>(dummyAge);
-			for (UUID u : tmp.keySet()) {
-				int age = tmp.get(u);
-				age += ticksRan;
-				tmp.put(u, age);
-				if (age >= 5500) {
-					needsUpdate.add(u);;
-				}
+				if (newAge >= 5500) {
+					PlayerServer p = getTrackedPlayerByUUID(u);
+					if (p != null) updateVehicle(p);
+				} else dummyAge.replace(u,age,newAge);
 			}
 
-			dummyAge.putAll(tmp);
-
-			for(UUID u : needsUpdate) {
-				PlayerServer p = (PlayerServer) getTrackedEntity().world.getPlayerEntityByUUID(u);
-				if (p != null && trackedPlayers.contains(p)) updateVehicle(p);
-				else {
-					dummyAge.remove(u);
-					dummies.remove(u);
-				}
-			}
-
-			ticksRan = 0;
+			ticksSkipped = 0;
 		}
+	}
+	@Unique
+	public PlayerServer getTrackedPlayerByUUID(UUID u) {
+		for(PlayerServer p : new HashSet<>(trackedPlayers)) {
+			if(p.uuid == u) return p;
+		}
+		return null;
 	}
 	@Unique
 	public void updateVehicleForTrackedPlayers() {
@@ -115,8 +111,7 @@ abstract class entryImplMixin {
 			if(rv instanceof Entity && p.getPassenger() != me) {
 
 				Entity v = (Entity) rv;
-				EntityItem dataDummy = getDummy(me);
-				for (int i = 0; i < Math.round(v.getRideHeight() / (dataDummy.bbHeight + dataDummy.yd)); i++) {
+				for (int i = 0; i < Math.round(v.getRideHeight() / (getClientRideHeight())); i++) {
 					EntityItem newDummy = getDummy(me);
 
 					p.playerNetServerHandler.sendPacket(new PacketAddItemEntity(newDummy));
@@ -129,7 +124,6 @@ abstract class entryImplMixin {
 					dummies.computeIfAbsent(p.uuid,pl -> new ArrayList<>()).add(newDummy.id);
 					dummyAge.put(p.uuid,0);
 				}
-
 			}
 
 			if(lastDummy != null) {
