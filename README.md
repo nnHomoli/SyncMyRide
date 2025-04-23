@@ -11,7 +11,6 @@ Because of the above, it might affect performance a bit
 ## Features
 
 - Players now receive vehicle packets when they load a new entity
-- Better workaround for PacketSetRiding not accepting null
 - Ride Height synchronization by using dummies
 
 
