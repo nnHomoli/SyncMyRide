@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import static nnhomoli.syncmyride.lib.dummy.*;
 import static nnhomoli.syncmyride.SyncMyRide.getVehicleDelay;
@@ -48,8 +49,9 @@ abstract class entryImplMixin {
 
 		++ticksSkipped;
 		if(ticksSkipped >= 100) {
-			for (UUID u : dummyAge.keySet()) {
-				int age = dummyAge.get(u);
+			final HashMap<UUID,Integer> temp = new HashMap<>(dummyAge);
+			for (UUID u : temp.keySet()) {
+				int age = temp.get(u);
 				int newAge = age + ticksSkipped;
 
 				if (newAge >= 5500) {
@@ -63,7 +65,7 @@ abstract class entryImplMixin {
 	}
 	@Unique
 	public PlayerServer getTrackedPlayerByUUID(UUID u) {
-		for(PlayerServer p : trackedPlayers) {
+		for(PlayerServer p : new HashSet<>(trackedPlayers)) {
 			if(p.uuid == u) return p;
 		}
 		return null;
