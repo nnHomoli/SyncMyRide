@@ -42,5 +42,4 @@ By default, this value is 16415, which is a "String" item
 <img src="gallery/zomobu.png" width="480" height="270" alt="Zombie riding on player">
 <img src="gallery/careepo.png" width="480" height="270" alt="Creeper riding on player">
 
-<img src="gallery/SMRWBT.png" width="497" height="198" alt="BetterTogether with SyncMyRide">
-<img src="gallery/BTStandAlone.png" width="436" height="192" alt="BetterTogether Standalone">
+<img src="gallery/playeru.png" width="497" height="198" alt="BetterTogether with SyncMyRide">
