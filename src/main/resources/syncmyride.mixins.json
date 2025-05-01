@@ -8,6 +8,7 @@
   "client": [
   ],
   "server": [
+    "playerMixin",
     "entryImplMixin",
     "packetHandlerServerMixin",
     "playerServerMixin"

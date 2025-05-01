@@ -1,8 +1,6 @@
 package nnhomoli.syncmyride.mixins;
 
-import net.minecraft.core.entity.player.Player;
 import net.minecraft.core.world.IVehicle;
-import net.minecraft.core.world.World;
 import net.minecraft.server.entity.player.PlayerServer;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,18 +9,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = PlayerServer.class,remap = false,priority = 700)
-abstract class playerServerMixin extends Player {
-	public playerServerMixin(World world) {super(world);}
+abstract class playerServerMixin{
 	@Inject(method = "startRiding",at = @At(value = "FIELD", target = "Lnet/minecraft/server/entity/player/PlayerServer;playerNetServerHandler:Lnet/minecraft/server/net/handler/PacketHandlerServer;"), cancellable = true)
 	public void startRiding(IVehicle vehicle, CallbackInfo ci) {
 		ci.cancel();
-	}
-	@Override
-	public void rideTick() {
-		if(this.isSneaking() && this.vehicle != null){
-			this.vehicle.ejectRider();
-			if(this.vehicle == null) return;
-		}
-		super.rideTick();
 	}
 }
