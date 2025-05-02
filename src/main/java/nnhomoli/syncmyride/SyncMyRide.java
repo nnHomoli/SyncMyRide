@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 
+import nnhomoli.syncmyride.cmds.debug;
 import nnhomoli.syncmyride.cmds.ride;
 
 public final class SyncMyRide implements ModInitializer{
@@ -38,6 +39,7 @@ public final class SyncMyRide implements ModInitializer{
 		setupConfig();
 
 		CommandManager.registerServerCommand(new ride());
+		CommandManager.registerServerCommand(new debug());
 
         LOGGER.info("SyncMyRide initialized.");
     }
