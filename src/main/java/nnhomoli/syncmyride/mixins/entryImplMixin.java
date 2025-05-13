@@ -35,7 +35,7 @@ abstract class entryImplMixin {
 
 	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
 	@Unique private IVehicle lastTrackedVehicle = null;
-	@Unique private int commonAge = 0;
+	@Unique private int commonAge = -1;
 
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
