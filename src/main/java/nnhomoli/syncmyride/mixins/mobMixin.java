@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = Mob.class,remap=false,priority = 700)
-public class mobMixin {
+abstract class mobMixin {
 	@Inject(method="onDeath",at=@At("HEAD"))
 	public void onDeath(Entity entityKilledBy, CallbackInfo ci) {
 		Mob m = (Mob)(Object) this;
