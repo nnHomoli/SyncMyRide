@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import static nnhomoli.syncmyride.lib.dummy.*;
 import static nnhomoli.syncmyride.SyncMyRide.getVehicleDelay;
@@ -35,40 +34,19 @@ abstract class entryImplMixin {
 	@Shadow public Set<PlayerServer> trackedPlayers;
 
 	@Unique private final HashMap<UUID, List<Integer>> dummies = new HashMap<>();
-	@Unique private final HashMap<UUID,Integer> dummyAge = new HashMap<>();
 	@Unique private IVehicle lastTrackedVehicle = null;
-	@Unique private int ticksSkipped = 0;
+	@Unique private int commonAge = 0;
 
 	@Inject(method = "tick",at=@At("RETURN"))
 	public void tickStuff(List<Player> list, CallbackInfo ci) {
-		if(lastTrackedVehicle != getTrackedEntity().vehicle) {
+		Entity e = getTrackedEntity();
+		if(lastTrackedVehicle != e.vehicle || commonAge >= 5500) {
+			commonAge = -1;
 			updateVehicleForTrackedPlayers();
-			if(getTrackedEntity() instanceof PlayerServer) updateVehicle((PlayerServer) getTrackedEntity());
-			lastTrackedVehicle = getTrackedEntity().vehicle;
+			if(e instanceof PlayerServer) updateVehicle((PlayerServer) e);
+			lastTrackedVehicle = e.vehicle;
 		}
-
-		++ticksSkipped;
-		if(ticksSkipped >= 100) {
-			final HashMap<UUID,Integer> temp = new HashMap<>(dummyAge);
-			for (UUID u : temp.keySet()) {
-				int age = temp.get(u);
-				int newAge = age + ticksSkipped;
-
-				if (newAge >= 5500) {
-					PlayerServer p = getTrackedPlayerByUUID(u);
-					if (p != null) updateVehicle(p);
-				} else dummyAge.replace(u,age,newAge);
-			}
-
-			ticksSkipped = 0;
-		}
-	}
-	@Unique
-	public PlayerServer getTrackedPlayerByUUID(UUID u) {
-		for(PlayerServer p : new HashSet<>(trackedPlayers)) {
-			if(p.uuid == u) return p;
-		}
-		return null;
+		if(commonAge != -1)commonAge++;
 	}
 	@Unique
 	public void updateVehicleForTrackedPlayers() {
@@ -86,7 +64,6 @@ abstract class entryImplMixin {
 	public void removeDummies(PlayerServer p) {
 		if(dummies.containsKey(p.uuid)) for(int dum : dummies.get(p.uuid)) p.playerNetServerHandler.sendPacket(new PacketRemoveEntity(dum));
 		dummies.remove(p.uuid);
-		dummyAge.remove(p.uuid);
 	}
 	@Inject(method = "removeTrackedPlayerSymmetric",at=@At("TAIL"))
 	public void removeTrackedPlayerSymmetric(Player player, CallbackInfo ci) {
@@ -97,7 +74,6 @@ abstract class entryImplMixin {
 	@Inject(method = "removeFromTrackedPlayers",at=@At("TAIL"))
 	public void removeFromTrackedPlayers(Player player, CallbackInfo ci) {
 		dummies.remove(player.uuid);
-		dummyAge.remove(player.uuid);
 	}
 	@Unique
 	public void updateVehicle(PlayerServer p) {
@@ -122,7 +98,7 @@ abstract class entryImplMixin {
 					lastDummy = newDummy;
 
 					dummies.computeIfAbsent(p.uuid,pl -> new ArrayList<>()).add(newDummy.id);
-					dummyAge.put(p.uuid,0);
+					commonAge = 0;
 				}
 			}
 
@@ -147,7 +123,10 @@ abstract class entryImplMixin {
 	}
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/core/net/entity/NetEntityHandler;getSpawnPacket(Lnet/minecraft/core/net/entity/EntityTrackerEntry;)Lnet/minecraft/core/net/packet/Packet;"))
 	public void updatePlayerEntity(Player player, CallbackInfo ci) {
-		dummyAge.put(player.uuid,5500-getVehicleDelay()*20);
+		if(getTrackedEntity().vehicle != null) {
+			int i = 5500-getVehicleDelay()*20;
+			if(i>commonAge)commonAge = i;
+		}
 	}
 	@Inject(method = "updatePlayerEntity",at= @At(value = "INVOKE", target = "Ljava/util/Set;remove(Ljava/lang/Object;)Z"), cancellable = true)
 	public void updatePlayerEntityTail(Player player, CallbackInfo ci) {
